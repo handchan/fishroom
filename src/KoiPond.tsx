@@ -362,23 +362,34 @@ function updateFish(fish: Fish, allFish: Fish[], w: number, h: number) {
     }
   }
 
-  const margin = 100;
-  const ef = 0.015;
+  // Edge avoidance — push velocity away from walls, redirect wander angle toward center
+  const margin = 120;
+  const ef = 0.02;
+  let pushX = 0;
+  let pushY = 0;
   if (fish.x < margin) {
-    fish.vx += ef * (1 - fish.x / margin);
-    fish.wanderAngle = lerpAngle(fish.wanderAngle, 0, 0.01);
+    const strength = 1 - fish.x / margin;
+    pushX += ef * strength;
   }
   if (fish.x > w - margin) {
-    fish.vx -= ef * (1 - (w - fish.x) / margin);
-    fish.wanderAngle = lerpAngle(fish.wanderAngle, Math.PI, 0.01);
+    const strength = 1 - (w - fish.x) / margin;
+    pushX -= ef * strength;
   }
   if (fish.y < margin) {
-    fish.vy += ef * (1 - fish.y / margin);
-    fish.wanderAngle = lerpAngle(fish.wanderAngle, Math.PI / 2, 0.01);
+    const strength = 1 - fish.y / margin;
+    pushY += ef * strength;
   }
   if (fish.y > h - margin) {
-    fish.vy -= ef * (1 - (h - fish.y) / margin);
-    fish.wanderAngle = lerpAngle(fish.wanderAngle, -Math.PI / 2, 0.01);
+    const strength = 1 - (h - fish.y) / margin;
+    pushY -= ef * strength;
+  }
+  if (pushX !== 0 || pushY !== 0) {
+    fish.vx += pushX;
+    fish.vy += pushY;
+    const awayAngle = Math.atan2(pushY, pushX);
+    const nearEdge = Math.min(fish.x, w - fish.x, fish.y, h - fish.y);
+    const urgency = nearEdge < 30 ? 0.15 : 0.03;
+    fish.wanderAngle = lerpAngle(fish.wanderAngle, awayAngle, urgency);
   }
 
   const spd = Math.sqrt(fish.vx ** 2 + fish.vy ** 2);
@@ -796,6 +807,9 @@ export function KoiPond({
     time: number;
     cssW: number;
     cssH: number;
+    vigGrad: CanvasGradient | null;
+    lilyCanvas: HTMLCanvasElement | null;
+    lilyDirty: boolean;
   }>({
     fish: [],
     ripples: [],
@@ -804,6 +818,9 @@ export function KoiPond({
     time: 0,
     cssW: 0,
     cssH: 0,
+    vigGrad: null,
+    lilyCanvas: null,
+    lilyDirty: true,
   });
 
   // Stable refs for props used inside animation loop
@@ -866,6 +883,23 @@ export function KoiPond({
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Cache vignette gradient
+      const vig = ctx.createRadialGradient(
+        rect.width / 2, rect.height / 2,
+        Math.min(rect.width, rect.height) * 0.35,
+        rect.width / 2, rect.height / 2,
+        Math.max(rect.width, rect.height) * 0.75
+      );
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(0,0,0,0.35)");
+      state.vigGrad = vig;
+
+      // Recreate lily pad offscreen canvas
+      state.lilyCanvas = document.createElement("canvas");
+      state.lilyCanvas.width = canvas.width;
+      state.lilyCanvas.height = canvas.height;
+      state.lilyDirty = true;
     };
 
     resize();
@@ -897,8 +931,17 @@ export function KoiPond({
 
       drawWater(ctx, w, h, state.time);
 
-      if (p.showLilyPads) {
-        for (const pad of state.lilyPads) drawLilyPad(ctx, pad, state.time);
+      // Lily pads — redraw to offscreen canvas every 60 frames
+      if (p.showLilyPads && state.lilyCanvas) {
+        if (state.lilyDirty || state.time % 60 === 0) {
+          const lCtx = state.lilyCanvas.getContext("2d")!;
+          const dpr = window.devicePixelRatio || 1;
+          lCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          lCtx.clearRect(0, 0, w, h);
+          for (const pad of state.lilyPads) drawLilyPad(lCtx, pad, state.time);
+          state.lilyDirty = false;
+        }
+        ctx.drawImage(state.lilyCanvas, 0, 0, w, h);
       }
 
       state.ripples = state.ripples.filter((r) => r.opacity > 0.01);
@@ -912,37 +955,34 @@ export function KoiPond({
 
       const sorted = [...state.fish].sort((a, b) => a.y - b.y);
       for (const f of sorted) {
+        // Shadow — soft radial gradient instead of blur filter
         ctx.save();
-        ctx.globalAlpha = 0.15;
-        ctx.filter = "blur(6px)";
+        const sr = Math.max(f.length * 0.15, f.maxHW * 0.8) * 1.2;
+        const shadowGrad = ctx.createRadialGradient(
+          f.x + 3, f.y + 4, 0,
+          f.x + 3, f.y + 4, sr
+        );
+        shadowGrad.addColorStop(0, "rgba(0,0,0,0.12)");
+        shadowGrad.addColorStop(0.6, "rgba(0,0,0,0.06)");
+        shadowGrad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = shadowGrad;
         ctx.beginPath();
         ctx.ellipse(
           f.x + 3,
           f.y + 4,
-          f.length * 0.15,
-          f.maxHW * 0.8,
+          sr,
+          sr * 0.7,
           f.heading,
           0,
           Math.PI * 2
         );
-        ctx.fillStyle = "#000";
         ctx.fill();
         ctx.restore();
         drawFish(ctx, f);
       }
 
-      if (p.showVignette) {
-        const vig = ctx.createRadialGradient(
-          w / 2,
-          h / 2,
-          Math.min(w, h) * 0.35,
-          w / 2,
-          h / 2,
-          Math.max(w, h) * 0.75
-        );
-        vig.addColorStop(0, "rgba(0,0,0,0)");
-        vig.addColorStop(1, "rgba(0,0,0,0.35)");
-        ctx.fillStyle = vig;
+      if (p.showVignette && state.vigGrad) {
+        ctx.fillStyle = state.vigGrad;
         ctx.fillRect(0, 0, w, h);
       }
 
