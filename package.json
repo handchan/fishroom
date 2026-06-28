@@ -1,48 +1,30 @@
 {
-  "name": "react-koi-pond",
-  "version": "0.1.0",
-  "description": "Interactive koi pond canvas animation for React — top-down stylized koi fish with ripple and scare interactions",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
+  "name": "fishroom-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fishroom — track water changes and feedings for your aquariums. An installable iPhone PWA, with an ambient koi pond.",
+  "type": "module",
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host",
     "typecheck": "tsc --noEmit"
   },
-  "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
-    "react": "^19.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.7",
+    "vite-plugin-pwa": "^0.21.1"
   },
-  "keywords": [
-    "react",
-    "koi",
-    "pond",
-    "canvas",
-    "animation",
-    "interactive",
-    "fish"
-  ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/handchan/react-koi-pond"
-  },
-  "sideEffects": false
+  }
 }
