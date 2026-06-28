@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { LogEntry, Tank, WaterType } from "./types";
 import { daysSince, lastLogOfType } from "./status";
+import TankCharts from "./Charts";
 
 interface Props {
   tank: Tank;
@@ -137,6 +138,13 @@ export default function TankSheet({
                   </span>
                 </button>
               </div>
+
+              {draft.logs.length > 0 && (
+                <>
+                  <div className="section-title">Trends</div>
+                  <TankCharts tank={draft} now={now} />
+                </>
+              )}
             </>
           )}
 
