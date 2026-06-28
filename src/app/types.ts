@@ -24,9 +24,10 @@ export interface Tank {
   /** Typical percent changed, used to prefill the quick log. */
   defaultChangePercent: number;
 
-  /** Position on the fishroom map, normalized 0..1 of the canvas. */
-  x: number;
-  y: number;
+  /** The rack/stack this tank lives on. */
+  stackId: string;
+  /** Shelf order within the stack — 0 is the top shelf. */
+  shelf: number;
 
   /** Metadata */
   livestock: string;
@@ -38,7 +39,39 @@ export interface Tank {
   logs: LogEntry[];
 }
 
+/** A point on the map, normalized 0..1 of the canvas. */
+export interface Pt {
+  x: number;
+  y: number;
+}
+
+/**
+ * A rack / stand placed in the room. Tanks can be stacked on its shelves,
+ * so a single map location may hold several tanks.
+ */
+export interface Stack {
+  id: string;
+  /** Position on the map, normalized 0..1. */
+  x: number;
+  y: number;
+  label?: string;
+}
+
+/** The drawn outline of the fishroom — a closed polygon of normalized points. */
+export interface RoomShape {
+  points: Pt[];
+}
+
+export interface ReminderSettings {
+  enabled: boolean;
+  /** Hour of day (0–23) for the daily "what's due" summary. */
+  hour: number;
+}
+
 export interface AppState {
   version: number;
+  room?: RoomShape;
+  stacks: Stack[];
   tanks: Tank[];
+  reminders: ReminderSettings;
 }

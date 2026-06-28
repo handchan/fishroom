@@ -3,40 +3,48 @@ import { KoiPond } from "./KoiPond";
 import FishroomMap from "./app/FishroomMap";
 import ListView from "./app/ListView";
 import TankSheet from "./app/TankSheet";
-import { newTank, useFishroom } from "./app/storage";
-import { getStatus, STATUS_COLORS } from "./app/status";
-import type { Tank } from "./app/types";
+import RackSheet from "./app/RackSheet";
+import SettingsSheet from "./app/SettingsSheet";
+import { newStack, newTank, useFishroom } from "./app/storage";
+import { getStatus, STATUS_COLORS, stackMembers } from "./app/status";
+import { useReminders } from "./app/reminders";
+import type { Stack, Tank } from "./app/types";
 
 type View = "map" | "list";
+interface Editing {
+  tank: Tank;
+  isNew: boolean;
+  ensureStack?: Stack;
+}
 
 export default function App() {
   const fr = useFishroom();
   const [view, setView] = useState<View>("map");
-  const [editing, setEditing] = useState<{ tank: Tank; isNew: boolean } | null>(
-    null
-  );
+  const [editing, setEditing] = useState<Editing | null>(null);
+  const [openStackId, setOpenStackId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [editRoom, setEditRoom] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
-  // A ticking "now" so relative times and statuses refresh while open.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(id);
   }, []);
 
-  const tanks = fr.state.tanks;
+  const { tanks, stacks, room, reminders } = fr.state;
+  useReminders(tanks, reminders, now);
 
   const summary = useMemo(() => {
     let overdue = 0;
     let due = 0;
-    const total = tanks.length;
     for (const t of tanks) {
       const lvl = getStatus(t, now).level;
       if (lvl === "never" || lvl === "overdue") overdue++;
       else if (lvl === "due") due++;
     }
-    return { overdue, due, total };
+    return { overdue, due, total: tanks.length };
   }, [tanks, now]);
 
   function flash(msg: string) {
@@ -58,19 +66,34 @@ export default function App() {
     flash(`🍤 Fed · ${t.name}`);
   }
 
-  function openAdd() {
-    setEditing({ tank: newTank(), isNew: true });
+  function addNewRack() {
+    const stack = newStack(0.5, 0.55);
+    setOpenStackId(null);
+    setEditing({ tank: newTank(stack.id, 0), isNew: true, ensureStack: stack });
   }
 
-  // The currently-edited tank, re-read from state so the history list
-  // reflects quick-logs made from inside the sheet.
-  const liveEditing = editing
+  function addTankToStack(stackId: string) {
+    const members = stackMembers(tanks, stackId);
+    const nextShelf = members.reduce((m, t) => Math.max(m, t.shelf), -1) + 1;
+    setOpenStackId(null);
+    setEditing({ tank: newTank(stackId, nextShelf), isNew: true });
+  }
+
+  // Re-read the edited tank from state so history reflects quick logs.
+  const liveEditing: Editing | null = editing
     ? {
-        tank:
-          tanks.find((t) => t.id === editing.tank.id) ?? editing.tank,
-        isNew: editing.isNew,
+        ...editing,
+        tank: tanks.find((t) => t.id === editing.tank.id) ?? editing.tank,
       }
     : null;
+
+  const openStack = openStackId
+    ? stacks.find((s) => s.id === openStackId)
+    : undefined;
+  const openMembers = openStack ? stackMembers(tanks, openStack.id) : [];
+
+  // Room editing helpers
+  const roomPts = room?.points ?? [];
 
   return (
     <div className="app">
@@ -90,21 +113,35 @@ export default function App() {
             )}
           </div>
         </div>
-        <button className="icon-btn" onClick={openAdd} aria-label="Add tank">
-          +
-        </button>
+        <div className="header-actions">
+          <button
+            className="icon-btn"
+            onClick={() => setShowSettings(true)}
+            aria-label="Reminders & settings"
+          >
+            🔔
+          </button>
+          <button className="icon-btn" onClick={addNewRack} aria-label="Add tank">
+            +
+          </button>
+        </div>
       </div>
 
       <div className="segment">
         <button
           className={view === "map" ? "active" : ""}
-          onClick={() => setView("map")}
+          onClick={() => {
+            setView("map");
+          }}
         >
           🗺️ Map
         </button>
         <button
           className={view === "list" ? "active" : ""}
-          onClick={() => setView("list")}
+          onClick={() => {
+            setView("list");
+            setEditRoom(false);
+          }}
         >
           📋 List
         </button>
@@ -140,6 +177,7 @@ export default function App() {
                 speed={0.5}
               />
             </div>
+
             {tanks.length === 0 ? (
               <div className="empty">
                 <div className="big">🪣</div>
@@ -147,11 +185,55 @@ export default function App() {
               </div>
             ) : (
               <FishroomMap
+                stacks={stacks}
                 tanks={tanks}
+                room={room}
                 now={now}
-                onOpen={(t) => setEditing({ tank: t, isNew: false })}
-                onMove={fr.setPosition}
+                editRoom={editRoom}
+                onOpenStack={(s) => setOpenStackId(s.id)}
+                onMoveStack={fr.moveStack}
+                onRoomChange={fr.setRoom}
               />
+            )}
+
+            {/* Map tools */}
+            {!editRoom ? (
+              <button
+                className="map-tool"
+                onClick={() => setEditRoom(true)}
+                aria-label="Draw room shape"
+              >
+                ✏️ Draw room
+              </button>
+            ) : (
+              <div className="room-tools">
+                <span className="room-tip">
+                  Tap to add corners · drag dots to shape the room
+                </span>
+                <div className="room-tool-btns">
+                  <button
+                    onClick={() => fr.setRoom(roomPts.slice(0, -1))}
+                    disabled={roomPts.length === 0}
+                  >
+                    Undo
+                  </button>
+                  <button
+                    onClick={() => fr.setRoom([])}
+                    disabled={roomPts.length === 0}
+                  >
+                    Clear
+                  </button>
+                  <button className="done" onClick={() => setEditRoom(false)}>
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!editRoom && (
+              <button className="fab" onClick={addNewRack} aria-label="Add tank">
+                +
+              </button>
             )}
           </>
         ) : (
@@ -164,13 +246,18 @@ export default function App() {
           />
         )}
 
-        <button className="fab" onClick={openAdd} aria-label="Add tank">
-          +
-        </button>
+        {view === "list" && (
+          <button className="fab" onClick={addNewRack} aria-label="Add tank">
+            +
+          </button>
+        )}
       </div>
 
-      {view === "map" && tanks.length > 0 && (
-        <div className="legend" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 8px)" }}>
+      {view === "map" && tanks.length > 0 && !editRoom && (
+        <div
+          className="legend"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 8px)" }}
+        >
           <span>
             <i style={{ background: STATUS_COLORS.fresh }} /> Fresh
           </span>
@@ -186,13 +273,30 @@ export default function App() {
         </div>
       )}
 
+      {openStack && !editing && (
+        <RackSheet
+          stack={openStack}
+          members={openMembers}
+          now={now}
+          onRename={(label) => fr.setStackLabel(openStack.id, label)}
+          onEditTank={(t) => {
+            setOpenStackId(null);
+            setEditing({ tank: t, isNew: false });
+          }}
+          onQuickChange={quickChange}
+          onQuickFeed={quickFeed}
+          onAddTank={() => addTankToStack(openStack.id)}
+          onClose={() => setOpenStackId(null)}
+        />
+      )}
+
       {liveEditing && (
         <TankSheet
           tank={liveEditing.tank}
           isNew={liveEditing.isNew}
           now={now}
           onSave={(t) => {
-            fr.upsertTank(t);
+            fr.upsertTank(t, liveEditing.ensureStack);
             setEditing(null);
             flash(liveEditing.isNew ? "🪣 Tank added" : "✓ Saved");
           }}
@@ -207,6 +311,14 @@ export default function App() {
           }}
           onRemoveLog={fr.removeLog}
           onClose={() => setEditing(null)}
+        />
+      )}
+
+      {showSettings && (
+        <SettingsSheet
+          settings={reminders}
+          onChange={fr.setReminders}
+          onClose={() => setShowSettings(false)}
         />
       )}
 

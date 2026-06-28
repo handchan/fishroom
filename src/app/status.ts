@@ -120,3 +120,33 @@ export function nodeRadius(volumeGallons: number): number {
 export function byUrgency(a: Tank, b: Tank, now = Date.now()): number {
   return getStatus(b, now).ratio - getStatus(a, now).ratio;
 }
+
+/** Tanks on a given stack, ordered top shelf → bottom. */
+export function stackMembers(tanks: Tank[], stackId: string): Tank[] {
+  return tanks
+    .filter((t) => t.stackId === stackId)
+    .sort((a, b) => a.shelf - b.shelf);
+}
+
+export interface StackSummary {
+  /** Worst (highest) urgency ratio among member tanks. */
+  ratio: number;
+  /** Largest member volume — drives the rack width on the map. */
+  maxVolume: number;
+  count: number;
+  /** How many members are overdue / need a change. */
+  attention: number;
+}
+
+export function summarizeStack(members: Tank[], now = Date.now()): StackSummary {
+  let ratio = 0;
+  let maxVolume = 0;
+  let attention = 0;
+  for (const t of members) {
+    const st = getStatus(t, now);
+    ratio = Math.max(ratio, st.ratio);
+    maxVolume = Math.max(maxVolume, t.volumeGallons);
+    if (st.level === "overdue" || st.level === "never") attention++;
+  }
+  return { ratio, maxVolume, count: members.length, attention };
+}
