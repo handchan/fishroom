@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { KoiPond } from "./KoiPond";
 import FishroomMap from "./app/FishroomMap";
 import ListView from "./app/ListView";
 import TankSheet from "./app/TankSheet";
@@ -169,15 +168,6 @@ export default function App() {
       <div className="content">
         {view === "map" ? (
           <>
-            <div className="map-pond">
-              <KoiPond
-                fishCount={5}
-                showLilyPads={false}
-                showVignette={false}
-                speed={0.5}
-              />
-            </div>
-
             {tanks.length === 0 ? (
               <div className="empty">
                 <div className="big">🪣</div>

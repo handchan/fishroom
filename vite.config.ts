@@ -16,8 +16,8 @@ export default defineConfig({
         short_name: "Fishroom",
         description:
           "Track water changes and feedings across your aquariums. Visual fishroom map and quick-edit list.",
-        theme_color: "#0a1f2e",
-        background_color: "#0a1f2e",
+        theme_color: "#faf9f5",
+        background_color: "#faf9f5",
         display: "standalone",
         orientation: "portrait",
         start_url: "./",

@@ -61,6 +61,12 @@ export default function ListView({
                 <span className="vol">{t.volumeGallons} gal</span>
               </div>
               <div className="meta">
+                <span
+                  className="pill mini"
+                  style={{ background: STATUS_COLORS[st.level] }}
+                >
+                  {STATUS_LABELS[st.level]}
+                </span>
                 <span>
                   💧 <b>{st.label}</b>
                 </span>
@@ -74,12 +80,6 @@ export default function ListView({
                 </span>
               </div>
             </div>
-            <span
-              className="pill"
-              style={{ background: STATUS_COLORS[st.level] }}
-            >
-              {STATUS_LABELS[st.level]}
-            </span>
             <div className="quick">
               <button
                 className="primary"

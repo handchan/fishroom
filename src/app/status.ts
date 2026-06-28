@@ -37,11 +37,11 @@ export interface TankStatus {
 export type StatusLevel = "fresh" | "ok" | "due" | "overdue" | "never";
 
 export const STATUS_COLORS: Record<StatusLevel, string> = {
-  fresh: "#34c759", // green
-  ok: "#a7e34f", // yellow-green
-  due: "#ffcc00", // amber
-  overdue: "#ff9500", // orange
-  never: "#ff453a", // red
+  fresh: "#4e9a6b", // sage green
+  ok: "#87a84b", // olive
+  due: "#e0a53b", // ochre / amber
+  overdue: "#d2774a", // warm orange
+  never: "#c0503e", // brick red
 };
 
 export const STATUS_LABELS: Record<StatusLevel, string> = {
@@ -87,11 +87,11 @@ export function getStatus(tank: Tank, now = Date.now()): TankStatus {
 export function statusColor(ratio: number): string {
   // Stops: 0 -> green, 0.9 -> amber, 1 -> orange, 1.5+ -> red
   const stops: Array<[number, [number, number, number]]> = [
-    [0, [52, 199, 89]],
-    [0.6, [167, 227, 79]],
-    [0.9, [255, 204, 0]],
-    [1.0, [255, 149, 0]],
-    [1.5, [255, 69, 58]],
+    [0, [78, 154, 107]],
+    [0.6, [135, 168, 75]],
+    [0.9, [224, 165, 59]],
+    [1.0, [210, 119, 74]],
+    [1.5, [192, 80, 62]],
   ];
   const t = Math.max(0, Math.min(1.5, ratio));
   for (let i = 0; i < stops.length - 1; i++) {
