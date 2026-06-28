@@ -850,10 +850,22 @@ select {
 .chart-svg .dot.temp {
   fill: var(--info-text);
 }
-.chart-svg .bar.water {
+.chart-svg .line.water {
+  stroke: var(--accent);
+}
+.chart-svg .area.water {
+  fill: var(--accent-soft);
+}
+.chart-svg .dot.water {
   fill: var(--accent);
 }
-.chart-svg .bar.feeding {
+.chart-svg .line.feeding {
+  stroke: var(--amber-text);
+}
+.chart-svg .area.feeding {
+  fill: var(--amber-soft);
+}
+.chart-svg .dot.feeding {
   fill: var(--amber-text);
 }
 .chart-empty {
