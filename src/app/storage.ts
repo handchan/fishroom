@@ -224,12 +224,29 @@ export function useFishroom() {
         t.id === id
           ? {
               ...t,
+              // keep the tank's current temp in sync with the latest reading
+              tempF:
+                entry.type === "temp_test" && typeof entry.tempF === "number"
+                  ? entry.tempF
+                  : t.tempF,
               logs: [{ ...entry, id: uid() }, ...t.logs].sort(
                 (a, b) => +new Date(b.date) - +new Date(a.date)
               ),
             }
           : t
       ),
+    }));
+  }, []);
+
+  /** Mark every tank fed right now (one feeding log each). */
+  const feedAll = useCallback(() => {
+    const date = new Date().toISOString();
+    setState((s) => ({
+      ...s,
+      tanks: s.tanks.map((t) => ({
+        ...t,
+        logs: [{ id: uid(), date, type: "feeding" as const }, ...t.logs],
+      })),
     }));
   }, []);
 
@@ -262,6 +279,7 @@ export function useFishroom() {
     moveStack,
     setStackLabel,
     addLog,
+    feedAll,
     removeLog,
     setRoom,
     setReminders,

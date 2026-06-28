@@ -15,6 +15,8 @@
   --accent-soft: rgba(194, 96, 63, 0.12);
   --amber-soft: rgba(200, 145, 50, 0.14);
   --amber-text: #9a6a1c;
+  --info-soft: rgba(64, 120, 142, 0.13);
+  --info-text: #3a7388;
   --danger: #bc4b3c;
   --danger-soft: rgba(188, 75, 60, 0.1);
   --shadow: 0 1px 2px rgba(45, 42, 36, 0.05), 0 6px 18px rgba(45, 42, 36, 0.07);
@@ -46,6 +48,8 @@
     --accent-soft: rgba(217, 119, 87, 0.16);
     --amber-soft: rgba(224, 165, 59, 0.16);
     --amber-text: #e3b25e;
+    --info-soft: rgba(96, 165, 190, 0.18);
+    --info-text: #84c2d6;
     --danger: #e0705c;
     --danger-soft: rgba(224, 112, 92, 0.14);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.32);
@@ -729,6 +733,75 @@ select {
   font-size: 11px;
   font-weight: 500;
   opacity: 0.75;
+}
+.action-row.three button {
+  padding: 13px 6px;
+}
+.action-row.three .al {
+  font-size: 14px;
+  font-weight: 700;
+}
+.action-row .temp {
+  background: var(--info-soft);
+  color: var(--info-text);
+}
+
+/* Last-event summary tiles in the tank sheet */
+.stat-row {
+  display: flex;
+  gap: 10px;
+  margin: 2px 0 16px;
+}
+.stat {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 8px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.stat-ic {
+  font-size: 17px;
+  line-height: 1;
+}
+.stat-v {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 6px;
+  letter-spacing: -0.01em;
+}
+.stat-l {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* Feed-all toolbar */
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 18px 10px;
+  position: relative;
+  z-index: 5;
+}
+.feed-all {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--amber-text);
+  background: var(--amber-soft);
+  border: 1px solid transparent;
+  border-radius: 22px;
+  padding: 9px 16px;
+  transition: transform 0.12s ease;
+}
+.feed-all:active {
+  transform: scale(0.95);
+}
+.feed-all:disabled {
+  opacity: 0.4;
 }
 
 .section-title {

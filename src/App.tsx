@@ -78,6 +78,14 @@ export default function App() {
     setEditing({ tank: newTank(stackId, nextShelf), isNew: true });
   }
 
+  function feedAllTanks() {
+    if (tanks.length === 0) return;
+    if (window.confirm(`Mark all ${tanks.length} tanks as fed right now?`)) {
+      fr.feedAll();
+      flash(`🍤 Fed all ${tanks.length} tanks`);
+    }
+  }
+
   // Re-read the edited tank from state so history reflects quick logs.
   const liveEditing: Editing | null = editing
     ? {
@@ -164,6 +172,18 @@ export default function App() {
           <div className="l">Overdue</div>
         </div>
       </div>
+
+      {tanks.length > 0 && (
+        <div className="toolbar">
+          <button
+            className="feed-all"
+            onClick={feedAllTanks}
+            disabled={editRoom}
+          >
+            🍤 Feed all tanks
+          </button>
+        </div>
+      )}
 
       <div className="content">
         {view === "map" ? (
@@ -297,7 +317,13 @@ export default function App() {
           }}
           onAddLog={(id, entry) => {
             fr.addLog(id, entry);
-            flash(entry.type === "water_change" ? "💧 Logged" : "🍤 Fed");
+            flash(
+              entry.type === "water_change"
+                ? "💧 Water change logged"
+                : entry.type === "temp_test"
+                ? `🌡️ Temp logged${entry.tempF != null ? ` · ${entry.tempF}°F` : ""}`
+                : "🍤 Fed"
+            );
           }}
           onRemoveLog={fr.removeLog}
           onClose={() => setEditing(null)}

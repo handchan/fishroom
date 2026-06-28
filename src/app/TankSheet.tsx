@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { LogEntry, Tank, WaterType } from "./types";
-import { getStatus } from "./status";
+import { daysSince, lastLogOfType } from "./status";
 
 interface Props {
   tank: Tank;
@@ -40,8 +40,6 @@ export default function TankSheet({
   const set = <K extends keyof Tank>(key: K, value: Tank[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  const st = getStatus(draft, now);
-
   function logChange() {
     onAddLog(draft.id, {
       date: new Date().toISOString(),
@@ -52,6 +50,27 @@ export default function TankSheet({
   function logFeed() {
     onAddLog(draft.id, { date: new Date().toISOString(), type: "feeding" });
   }
+  function logTemp() {
+    const current = draft.tempF != null ? String(draft.tempF) : "";
+    const input = window.prompt("Water temperature (°F)", current);
+    if (input == null || input.trim() === "") return;
+    const v = clampNum(input, 32, 120);
+    set("tempF", v);
+    onAddLog(draft.id, {
+      date: new Date().toISOString(),
+      type: "temp_test",
+      tempF: v,
+    });
+  }
+
+  const lastChange = lastLogOfType(draft, "water_change");
+  const lastFeed = lastLogOfType(draft, "feeding");
+  const lastTemp = lastLogOfType(draft, "temp_test");
+  const ago = (iso: string | undefined) => {
+    const d = daysSince(iso, now);
+    if (d == null) return "—";
+    return d === 0 ? "today" : d === 1 ? "1d ago" : `${d}d ago`;
+  };
 
   return (
     <>
@@ -71,22 +90,54 @@ export default function TankSheet({
 
         <div className="sheet-body">
           {!isNew && (
-            <div className="action-row">
-              <button className="wc" onClick={logChange}>
-                💧 Log water change
-                <span className="hint">{draft.defaultChangePercent}% · {st.label}</span>
-              </button>
-              <button className="feed" onClick={logFeed}>
-                🍤 Mark fed
-                <span className="hint">
-                  {st.daysSinceFeed == null
-                    ? "not logged"
-                    : st.daysSinceFeed === 0
-                    ? "fed today"
-                    : `${st.daysSinceFeed}d ago`}
-                </span>
-              </button>
-            </div>
+            <>
+              <div className="stat-row">
+                <div className="stat">
+                  <div className="stat-ic">💧</div>
+                  <div className="stat-v">{ago(lastChange?.date)}</div>
+                  <div className="stat-l">Last water change</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-ic">🍤</div>
+                  <div className="stat-v">{ago(lastFeed?.date)}</div>
+                  <div className="stat-l">Last fed</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-ic">🌡️</div>
+                  <div className="stat-v">
+                    {lastTemp?.tempF != null
+                      ? `${lastTemp.tempF}°F`
+                      : draft.tempF != null
+                      ? `${draft.tempF}°F`
+                      : "—"}
+                  </div>
+                  <div className="stat-l">
+                    {lastTemp
+                      ? `Tested ${ago(lastTemp.date)}`
+                      : draft.tempF != null
+                      ? "Not tested yet"
+                      : "Last temp"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="action-row three">
+                <button className="wc" onClick={logChange}>
+                  <span className="al">💧 Water</span>
+                  <span className="hint">{draft.defaultChangePercent}% change</span>
+                </button>
+                <button className="feed" onClick={logFeed}>
+                  <span className="al">🍤 Fed</span>
+                  <span className="hint">mark fed now</span>
+                </button>
+                <button className="temp" onClick={logTemp}>
+                  <span className="al">🌡️ Temp</span>
+                  <span className="hint">
+                    {draft.tempF != null ? `last ${draft.tempF}°F` : "log a reading"}
+                  </span>
+                </button>
+              </div>
+            </>
           )}
 
           <div className="field">
@@ -203,12 +254,18 @@ export default function TankSheet({
               {draft.logs.slice(0, 30).map((l) => (
                 <div className="log-item" key={l.id}>
                   <span className="lt">
-                    {l.type === "water_change" ? "💧" : "🍤"}
+                    {l.type === "water_change"
+                      ? "💧"
+                      : l.type === "feeding"
+                      ? "🍤"
+                      : "🌡️"}
                   </span>
                   <div className="ld">
                     {l.type === "water_change"
                       ? `Water change${l.percent ? ` · ${l.percent}%` : ""}`
-                      : "Feeding"}
+                      : l.type === "feeding"
+                      ? "Feeding"
+                      : `Temp test${l.tempF != null ? ` · ${l.tempF}°F` : ""}`}
                     <div className="lsub">{fmtDate(l.date)}</div>
                   </div>
                   <button

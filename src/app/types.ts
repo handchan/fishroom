@@ -6,9 +6,11 @@ export interface LogEntry {
   id: string;
   /** ISO timestamp of when the event happened. */
   date: string;
-  type: "water_change" | "feeding";
+  type: "water_change" | "feeding" | "temp_test";
   /** For water changes: percent of volume changed. */
   percent?: number;
+  /** For temp tests: the measured temperature in °F. */
+  tempF?: number;
   note?: string;
 }
 
