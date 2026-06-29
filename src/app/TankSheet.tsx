@@ -251,6 +251,23 @@ export default function TankSheet({
             />
           </div>
 
+          <div className="setting-row">
+            <div>
+              <div className="setting-title">🌐 Share to my site</div>
+              <div className="setting-sub">
+                Include this tank in the public data hengchengyu.com can read.
+              </div>
+            </div>
+            <button
+              className={"switch" + (draft.shared ? " on" : "")}
+              role="switch"
+              aria-checked={Boolean(draft.shared)}
+              onClick={() => set("shared", !draft.shared)}
+            >
+              <span className="knob" />
+            </button>
+          </div>
+
           {!isNew && (
             <>
               <div className="section-title">History</div>

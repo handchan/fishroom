@@ -5,6 +5,7 @@ import type {
   Pt,
   ReminderSettings,
   Stack,
+  SyncSettings,
   Tank,
 } from "./types";
 import { uid } from "./status";
@@ -14,6 +15,10 @@ const LEGACY_KEY = "fishroom.state.v1";
 const STATE_VERSION = 2;
 
 const DEFAULT_REMINDERS: ReminderSettings = { enabled: false, hour: 9 };
+const DEFAULT_SYNC: SyncSettings = {
+  slug: import.meta.env.VITE_AQUARIUM_SLUG ?? "",
+  publish: false,
+};
 
 function daysAgoISO(days: number): string {
   return new Date(Date.now() - days * 86400000).toISOString();
@@ -73,6 +78,7 @@ function seed(): AppState {
     },
     stacks,
     reminders: DEFAULT_REMINDERS,
+    sync: DEFAULT_SYNC,
     tanks: [
       // Main rack — three tanks stacked
       mk("Community 75g", 75, "s1", 0, 7, 2, 0, {
@@ -136,6 +142,7 @@ function migrateV1(raw: string): AppState | null {
       stacks,
       tanks,
       reminders: DEFAULT_REMINDERS,
+      sync: DEFAULT_SYNC,
     };
   } catch {
     return null;
@@ -148,7 +155,11 @@ function load(): AppState {
     if (raw) {
       const parsed = JSON.parse(raw) as AppState;
       if (parsed && Array.isArray(parsed.tanks) && Array.isArray(parsed.stacks)) {
-        return { ...parsed, reminders: parsed.reminders ?? DEFAULT_REMINDERS };
+        return {
+          ...parsed,
+          reminders: parsed.reminders ?? DEFAULT_REMINDERS,
+          sync: parsed.sync ?? DEFAULT_SYNC,
+        };
       }
     }
     const legacy = localStorage.getItem(LEGACY_KEY);
@@ -272,6 +283,18 @@ export function useFishroom() {
     setState((s) => ({ ...s, reminders }));
   }, []);
 
+  const setSync = useCallback((sync: SyncSettings) => {
+    setState((s) => ({ ...s, sync }));
+  }, []);
+
+  const replaceState = useCallback((next: AppState) => {
+    setState({
+      ...next,
+      reminders: next.reminders ?? DEFAULT_REMINDERS,
+      sync: next.sync ?? DEFAULT_SYNC,
+    });
+  }, []);
+
   return {
     state,
     upsertTank,
@@ -283,6 +306,8 @@ export function useFishroom() {
     removeLog,
     setRoom,
     setReminders,
+    setSync,
+    replaceState,
   };
 }
 

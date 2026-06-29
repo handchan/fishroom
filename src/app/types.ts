@@ -36,6 +36,9 @@ export interface Tank {
   notes: string;
   tempF?: number;
 
+  /** Include this tank in the public payload your personal site can read. */
+  shared?: boolean;
+
   createdAt: string;
   /** Most recent events, newest first. */
   logs: LogEntry[];
@@ -70,10 +73,18 @@ export interface ReminderSettings {
   hour: number;
 }
 
+export interface SyncSettings {
+  /** Slug the personal site reads from, e.g. "hengchengyu". */
+  slug: string;
+  /** Whether the shared snapshot is published (site-readable). */
+  publish: boolean;
+}
+
 export interface AppState {
   version: number;
   room?: RoomShape;
   stacks: Stack[];
   tanks: Tank[];
   reminders: ReminderSettings;
+  sync?: SyncSettings;
 }

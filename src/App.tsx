@@ -7,6 +7,7 @@ import SettingsSheet from "./app/SettingsSheet";
 import { newStack, newTank, useFishroom } from "./app/storage";
 import { getStatus, STATUS_COLORS, stackMembers } from "./app/status";
 import { useReminders } from "./app/reminders";
+import { useSync } from "./app/sync";
 import type { Stack, Tank } from "./app/types";
 
 type View = "map" | "list";
@@ -34,6 +35,7 @@ export default function App() {
 
   const { tanks, stacks, room, reminders } = fr.state;
   useReminders(tanks, reminders, now);
+  const sync = useSync(fr.state, now);
 
   const summary = useMemo(() => {
     let overdue = 0;
@@ -332,8 +334,17 @@ export default function App() {
 
       {showSettings && (
         <SettingsSheet
-          settings={reminders}
-          onChange={fr.setReminders}
+          reminders={reminders}
+          onRemindersChange={fr.setReminders}
+          state={fr.state}
+          onImport={(s) => {
+            fr.replaceState(s);
+            setShowSettings(false);
+            flash("✓ Data imported");
+          }}
+          sync={sync}
+          syncPrefs={fr.state.sync ?? { slug: "", publish: false }}
+          onSyncPrefsChange={fr.setSync}
           onClose={() => setShowSettings(false)}
         />
       )}

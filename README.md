@@ -52,6 +52,23 @@ and pop in daily for the most reliable nudges. (A backend push service could
 deliver while fully closed; that's intentionally out of scope to keep your data
 100% on-device.)
 
+## 🌐 Connect to your own site
+
+Fishroom can securely publish a **read-only feed of the tanks you mark
+"shared"** so another site (e.g. `hengchengyu.com/aquarium`) can read it —
+while everything else stays on your device.
+
+- Local-on-device is the source of truth; cloud sync is **opt-in**.
+- Only tanks with *Share to my site* on are uploaded; private tanks never leave
+  the device.
+- Reads use a public *anon* key scoped by Postgres Row-Level Security (read-only,
+  shared rows only); writing requires you to be signed in.
+
+It's dormant until you add Supabase keys. See **[docs/INTEGRATION.md](docs/INTEGRATION.md)**
+for the table + RLS SQL, the `.env` vars, and a copy-paste fetch example for the
+consuming site, plus the versioned JSON contract. Prefer to stay fully offline?
+Use **Settings → Backup** to export/import a JSON file.
+
 ## 🚀 Hosting
 
 This repo ships a GitHub Actions workflow
@@ -89,16 +106,20 @@ src/
   App.tsx               # shell: header, Map/List tabs, summary, sheet, toasts
   KoiPond.tsx           # ambient koi pond canvas (original component)
   app/
-    types.ts            # Tank / Stack / Room / Reminder data model
+    types.ts            # Tank / Stack / Room / Reminder / Sync data model
     status.ts           # status levels, colour gradient, node + stack sizing
     storage.ts          # localStorage hook, v1→v2 migration, seed fishroom
     reminders.ts        # notification permission + due/summary scheduling
+    contract.ts         # versioned PUBLIC data contract (shared tanks only)
+    backup.ts           # JSON export / import
+    sync.ts             # optional Supabase cloud sync (gated by env vars)
+    Charts.tsx          # per-tank Trends line charts
     FishroomMap.tsx     # room outline drawing + draggable racks
     RackSheet.tsx       # expanded rack — stacked tanks, per-shelf logging
     ListView.tsx        # urgency-sorted quick-log list
     TankSheet.tsx       # add/edit tank bottom sheet
-    SettingsSheet.tsx   # reminders settings
-    styles.css          # iOS-flavoured dark aquatic theme
+    SettingsSheet.tsx   # reminders, cloud sync, backup
+    styles.css          # warm "Claude" theme (light + dark)
 ```
 
 ## License
