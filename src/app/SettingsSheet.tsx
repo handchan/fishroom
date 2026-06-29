@@ -7,6 +7,7 @@ import {
   showNotification,
 } from "./reminders";
 import { downloadBackup, parseBackup } from "./backup";
+import { useDialog } from "./Dialog";
 import type { UseSync } from "./sync";
 
 interface Props {
@@ -35,6 +36,7 @@ export default function SettingsSheet({
   const fileRef = useRef<HTMLInputElement>(null);
   const [importErr, setImportErr] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const dialog = useDialog();
 
   const sharedCount = state.tanks.filter((t) => t.shared).length;
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -58,12 +60,13 @@ export default function SettingsSheet({
     try {
       const text = await f.text();
       const next = parseBackup(text);
-      if (
-        confirm(
-          `Import ${next.tanks.length} tanks? This replaces your current data on this device.`
-        )
-      )
-        onImport(next);
+      const ok = await dialog.confirm({
+        title: `Import ${next.tanks.length} tanks?`,
+        message: "This replaces all current data on this device.",
+        confirmLabel: "Replace data",
+        danger: true,
+      });
+      if (ok) onImport(next);
     } catch (err) {
       setImportErr(err instanceof Error ? err.message : "Could not read that file.");
     } finally {
@@ -214,8 +217,20 @@ export default function SettingsSheet({
                 </button>
               </div>
               <button className="ghost-btn" disabled={sync.busy} onClick={sync.pushNow}>
-                {sync.busy ? "Syncing…" : "Sync now"}
+                {sync.busy
+                  ? "Syncing…"
+                  : !sync.online
+                  ? "Sync now (offline)"
+                  : sync.pending
+                  ? "Sync now (changes pending)"
+                  : "Sync now"}
               </button>
+              {sync.lastPushed && !sync.busy && (
+                <p className="note">
+                  Last synced {fmtAgo(sync.lastPushed)}
+                  {sync.online ? "" : " · offline, will retry when reconnected"}.
+                </p>
+              )}
             </>
           )}
           {sync.message && <p className="note">{sync.message}</p>}
@@ -258,4 +273,14 @@ function fmtHour(h: number): string {
   const ampm = h < 12 ? "AM" : "PM";
   const hr = h % 12 === 0 ? 12 : h % 12;
   return `${hr}:00 ${ampm}`;
+}
+
+function fmtAgo(ts: number): string {
+  const secs = Math.floor((Date.now() - ts) / 1000);
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }

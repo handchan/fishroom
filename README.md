@@ -22,8 +22,6 @@ across all the aquariums in your fishroom.
 - **📴 Offline-first** — all data lives on your device (localStorage). No
   account, no server, works on a plane. Add it to your Home Screen and it runs
   full-screen like a native app.
-- **🪷 Ambient koi** — the map drifts over a subtle live koi pond (the original
-  `react-koi-pond` canvas this repo started from).
 
 > A native Swift/App Store build isn't used here: a PWA installs straight from
 > Safari with no Xcode, no developer account, and no review — and gets you the
@@ -77,7 +75,7 @@ This repo ships a GitHub Actions workflow
 
 To turn it on: **Repo → Settings → Pages → Build and deployment → Source:
 GitHub Actions.** After the next push your app is live at
-`https://<user>.github.io/react-koi-pond/`, ready to open in Safari and install.
+`https://<user>.github.io/fishroom/`, ready to open in Safari and install.
 
 The build uses a relative base (`base: "./"`), so it also works on Netlify,
 Vercel, Cloudflare Pages, or any static host — just deploy the `dist/` folder.
@@ -90,6 +88,7 @@ npm run dev        # http://localhost:5173
 npm run build      # production build → dist/
 npm run preview    # serve the production build
 npm run typecheck  # tsc --noEmit
+npm test           # run the unit test suite (Vitest)
 ```
 
 Tech: **React 19 + TypeScript + Vite 6 + vite-plugin-pwa** (Workbox service
@@ -102,9 +101,9 @@ index.html              # iOS PWA meta tags (viewport-fit, apple-* tags)
 vite.config.ts          # Vite + PWA manifest & service worker
 public/                 # app icons (192/512, maskable, apple-touch)
 src/
-  main.tsx              # entry
+  main.tsx              # entry (mounts App inside an ErrorBoundary)
   App.tsx               # shell: header, Map/List tabs, summary, sheet, toasts
-  KoiPond.tsx           # ambient koi pond canvas (original component)
+  ErrorBoundary.tsx     # top-level crash guard with a data-export escape hatch
   app/
     types.ts            # Tank / Stack / Room / Reminder / Sync data model
     status.ts           # status levels, colour gradient, node + stack sizing

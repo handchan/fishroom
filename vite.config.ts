@@ -6,10 +6,15 @@ import { VitePWA } from "vite-plugin-pwa";
 // root or a project subpath (e.g. GitHub Pages at /react-koi-pond/).
 export default defineConfig({
   base: "./",
+  // Honor a PORT env var when provided (e.g. preview tooling) without
+  // affecting the default local dev port.
+  server: { port: Number(process.env.PORT) || 5173 },
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // Prompt the user before reloading: an auto-reload could interrupt them
+      // mid-edit. We surface an in-app "Update" toast (see useAppUpdate).
+      registerType: "prompt",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Fishroom — Aquarium Tracker",

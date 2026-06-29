@@ -25,7 +25,7 @@ function daysAgoISO(days: number): string {
 }
 
 /** A small starter fishroom — includes a couple of racks with stacked tanks. */
-function seed(): AppState {
+export function seed(): AppState {
   const stacks: Stack[] = [
     { id: "s1", x: 0.26, y: 0.34, label: "Main rack" },
     { id: "s2", x: 0.7, y: 0.32, label: "Shrimp rack" },
@@ -75,6 +75,7 @@ function seed(): AppState {
         { x: 0.9, y: 0.84 },
         { x: 0.1, y: 0.84 },
       ],
+      closed: true,
     },
     stacks,
     reminders: DEFAULT_REMINDERS,
@@ -124,7 +125,7 @@ interface LegacyTank extends Tank {
 }
 
 /** Migrate a v1 state (free-floating tanks with x/y) into v2 stacks. */
-function migrateV1(raw: string): AppState | null {
+export function migrateV1(raw: string): AppState | null {
   try {
     const old = JSON.parse(raw) as { tanks?: LegacyTank[] };
     if (!old || !Array.isArray(old.tanks)) return null;
@@ -157,6 +158,11 @@ function load(): AppState {
       if (parsed && Array.isArray(parsed.tanks) && Array.isArray(parsed.stacks)) {
         return {
           ...parsed,
+          // Legacy rooms (saved before the open/closed flag) are finished.
+          room:
+            parsed.room && parsed.room.closed === undefined
+              ? { ...parsed.room, closed: true }
+              : parsed.room,
           reminders: parsed.reminders ?? DEFAULT_REMINDERS,
           sync: parsed.sync ?? DEFAULT_SYNC,
         };
@@ -173,11 +179,14 @@ function load(): AppState {
   }
 }
 
-function save(state: AppState) {
+/** Persist state. Returns false if the write failed (quota/private mode). */
+function save(state: AppState): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
   } catch {
-    // storage full / private mode — ignore, app still works in-memory
+    // storage full / private mode — app still works in-memory this session.
+    return false;
   }
 }
 
@@ -189,9 +198,11 @@ function pruneStacks(s: AppState): AppState {
 
 export function useFishroom() {
   const [state, setState] = useState<AppState>(() => load());
+  /** False once a persist has failed — surfaced to warn the user. */
+  const [persisted, setPersisted] = useState(true);
 
   useEffect(() => {
-    save(state);
+    setPersisted(save(state));
   }, [state]);
 
   const upsertTank = useCallback((tank: Tank, ensureStack?: Stack) => {
@@ -275,8 +286,23 @@ export function useFishroom() {
   const setRoom = useCallback((points: Pt[]) => {
     setState((s) => ({
       ...s,
-      room: points.length >= 3 ? { points } : undefined,
+      // Persist points as they're drawn (even 1–2) so a new room can be built
+      // up tap-by-tap; an empty array clears the room. A fresh outline starts
+      // open (connect-the-dots); edits to an existing room keep its flag.
+      room:
+        points.length > 0
+          ? { points, closed: s.room?.closed ?? false }
+          : undefined,
     }));
+  }, []);
+
+  /** Finish the outline so it renders as a filled polygon. */
+  const closeRoom = useCallback(() => {
+    setState((s) =>
+      s.room && s.room.points.length >= 3
+        ? { ...s, room: { ...s.room, closed: true } }
+        : s
+    );
   }, []);
 
   const setReminders = useCallback((reminders: ReminderSettings) => {
@@ -297,6 +323,7 @@ export function useFishroom() {
 
   return {
     state,
+    persisted,
     upsertTank,
     removeTank,
     moveStack,
@@ -305,6 +332,7 @@ export function useFishroom() {
     feedAll,
     removeLog,
     setRoom,
+    closeRoom,
     setReminders,
     setSync,
     replaceState,

@@ -369,11 +369,26 @@ select {
   stroke-linejoin: round;
   opacity: 0.85;
 }
+/* Open connect-the-dots line shown while drawing a new outline. */
+.room-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 7 5;
+}
 .room-handle {
   fill: var(--accent);
   stroke: var(--surface);
   stroke-width: 3;
   cursor: grab;
+}
+/* The first dot, emphasized as the "tap here to close" target. */
+.room-handle.start {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 4;
 }
 
 .map-tool {
@@ -431,6 +446,11 @@ select {
 }
 .room-tool-btns button:disabled {
   opacity: 0.4;
+}
+.room-tool-btns .close-shape {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
 }
 .room-tool-btns .done {
   background: var(--accent);
@@ -1156,4 +1176,208 @@ select {
 }
 .ghost-btn:active {
   transform: scale(0.98);
+}
+
+/* ---------- Crash / error boundary ---------- */
+.crash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 20px);
+  background: var(--bg);
+  color: var(--text);
+}
+.crash-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 28px 22px;
+  text-align: center;
+}
+.crash-emoji {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.crash-card h1 {
+  font-size: 19px;
+  margin: 0 0 8px;
+}
+.crash-card p {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+.crash-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.crash-actions button {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.crash-actions button:active {
+  transform: scale(0.98);
+}
+.crash-actions .crash-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.crash-detail {
+  margin: 18px 0 0;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow: auto;
+}
+
+/* ---------- In-app confirm / prompt dialog ---------- */
+.dialog-scrim {
+  z-index: 60;
+}
+.dialog {
+  position: fixed;
+  z-index: 61;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100vw - 40px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 20px;
+  animation: dialog-in 0.16s ease-out;
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.97);
+  }
+}
+.dialog-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.dialog-msg {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.dialog-field {
+  margin-top: 16px;
+}
+.dialog-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dialog-input-row input {
+  flex: 1;
+}
+.dialog-unit {
+  color: var(--text-dim);
+  font-size: 15px;
+  font-weight: 600;
+}
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.dialog-actions button {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+}
+.dialog-cancel {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.dialog-confirm {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.dialog-confirm.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.dialog-actions button:active {
+  transform: scale(0.98);
+}
+
+/* ---------- Warning banner ---------- */
+.banner {
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.banner.warn {
+  background: var(--amber-soft);
+  color: var(--amber-text);
+  border: 1px solid color-mix(in srgb, var(--amber-text) 28%, transparent);
+}
+
+/* ---------- Update-available toast ---------- */
+.update-toast {
+  position: fixed;
+  z-index: 55;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 16px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  font-weight: 600;
+  max-width: calc(100vw - 32px);
+}
+.update-toast button {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.update-toast button:active {
+  transform: scale(0.97);
 }

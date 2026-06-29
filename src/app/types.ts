@@ -62,9 +62,15 @@ export interface Stack {
   label?: string;
 }
 
-/** The drawn outline of the fishroom — a closed polygon of normalized points. */
+/** The drawn outline of the fishroom — a polygon of normalized points. */
 export interface RoomShape {
   points: Pt[];
+  /**
+   * Whether the outline is finished (filled polygon). While `false` the user
+   * is still dropping corners and it renders as an open connect-the-dots line.
+   * Absent on legacy data → treated as finished.
+   */
+  closed?: boolean;
 }
 
 export interface ReminderSettings {

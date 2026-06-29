@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { LogEntry, Tank, WaterType } from "./types";
 import { daysSince, lastLogOfType } from "./status";
+import { useDialog } from "./Dialog";
 import TankCharts from "./Charts";
 
 interface Props {
@@ -32,6 +33,7 @@ export default function TankSheet({
   onClose,
 }: Props) {
   const [draft, setDraft] = useState<Tank>(tank);
+  const dialog = useDialog();
 
   // keep local draft in sync when new logs land from quick-actions
   useEffect(() => {
@@ -51,11 +53,18 @@ export default function TankSheet({
   function logFeed() {
     onAddLog(draft.id, { date: new Date().toISOString(), type: "feeding" });
   }
-  function logTemp() {
-    const current = draft.tempF != null ? String(draft.tempF) : "";
-    const input = window.prompt("Water temperature (°F)", current);
-    if (input == null || input.trim() === "") return;
-    const v = clampNum(input, 32, 120);
+  async function logTemp() {
+    const v = await dialog.promptNumber({
+      title: "Log water temperature",
+      label: "Temperature",
+      initial: draft.tempF,
+      placeholder: "78",
+      unit: "°F",
+      confirmLabel: "Log",
+      min: 32,
+      max: 120,
+    });
+    if (v == null) return;
     set("tempF", v);
     onAddLog(draft.id, {
       date: new Date().toISOString(),
@@ -305,9 +314,14 @@ export default function TankSheet({
 
               <button
                 className="danger-btn"
-                onClick={() => {
-                  if (confirm(`Delete "${draft.name}"? This can't be undone.`))
-                    onDelete(draft.id);
+                onClick={async () => {
+                  const ok = await dialog.confirm({
+                    title: `Delete "${draft.name}"?`,
+                    message: "This permanently removes the tank and its history.",
+                    confirmLabel: "Delete",
+                    danger: true,
+                  });
+                  if (ok) onDelete(draft.id);
                 }}
               >
                 Delete tank

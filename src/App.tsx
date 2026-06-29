@@ -8,6 +8,8 @@ import { newStack, newTank, useFishroom } from "./app/storage";
 import { getStatus, STATUS_COLORS, stackMembers } from "./app/status";
 import { useReminders } from "./app/reminders";
 import { useSync } from "./app/sync";
+import { useDialog } from "./app/Dialog";
+import { useAppUpdate } from "./app/pwa";
 import type { Stack, Tank } from "./app/types";
 
 type View = "map" | "list";
@@ -19,6 +21,7 @@ interface Editing {
 
 export default function App() {
   const fr = useFishroom();
+  const dialog = useDialog();
   const [view, setView] = useState<View>("map");
   const [editing, setEditing] = useState<Editing | null>(null);
   const [openStackId, setOpenStackId] = useState<string | null>(null);
@@ -36,6 +39,7 @@ export default function App() {
   const { tanks, stacks, room, reminders } = fr.state;
   useReminders(tanks, reminders, now);
   const sync = useSync(fr.state, now);
+  const { needRefresh, applyUpdate } = useAppUpdate();
 
   const summary = useMemo(() => {
     let overdue = 0;
@@ -80,9 +84,14 @@ export default function App() {
     setEditing({ tank: newTank(stackId, nextShelf), isNew: true });
   }
 
-  function feedAllTanks() {
+  async function feedAllTanks() {
     if (tanks.length === 0) return;
-    if (window.confirm(`Mark all ${tanks.length} tanks as fed right now?`)) {
+    const ok = await dialog.confirm({
+      title: "Feed all tanks?",
+      message: `This logs a feeding right now for all ${tanks.length} tanks.`,
+      confirmLabel: "Feed all",
+    });
+    if (ok) {
       fr.feedAll();
       flash(`🍤 Fed all ${tanks.length} tanks`);
     }
@@ -103,6 +112,16 @@ export default function App() {
 
   // Room editing helpers
   const roomPts = room?.points ?? [];
+  const roomOpen = room?.closed === false;
+
+  // Leave room-editing cleanly: finish a valid outline, or discard a stub.
+  function exitRoomEdit() {
+    if (roomOpen) {
+      if (roomPts.length >= 3) fr.closeRoom();
+      else fr.setRoom([]);
+    }
+    setEditRoom(false);
+  }
 
   return (
     <div className="app">
@@ -136,6 +155,14 @@ export default function App() {
         </div>
       </div>
 
+      {!fr.persisted && (
+        <div className="banner warn" role="alert">
+          ⚠️ Couldn't save to this device (storage full or private browsing).
+          Changes are kept for this session only — export a backup from 🔔
+          Settings.
+        </div>
+      )}
+
       <div className="segment">
         <button
           className={view === "map" ? "active" : ""}
@@ -149,7 +176,7 @@ export default function App() {
           className={view === "list" ? "active" : ""}
           onClick={() => {
             setView("list");
-            setEditRoom(false);
+            exitRoomEdit();
           }}
         >
           📋 List
@@ -205,6 +232,7 @@ export default function App() {
                 onOpenStack={(s) => setOpenStackId(s.id)}
                 onMoveStack={fr.moveStack}
                 onRoomChange={fr.setRoom}
+                onCloseRoom={fr.closeRoom}
               />
             )}
 
@@ -220,7 +248,11 @@ export default function App() {
             ) : (
               <div className="room-tools">
                 <span className="room-tip">
-                  Tap to add corners · drag dots to shape the room
+                  {roomOpen
+                    ? roomPts.length >= 3
+                      ? "Tap the first dot (or Close) to finish · drag dots to adjust"
+                      : "Tap to drop corners, one at a time · drag dots to adjust"
+                    : "Tap to add a corner · drag dots to reshape"}
                 </span>
                 <div className="room-tool-btns">
                   <button
@@ -235,7 +267,12 @@ export default function App() {
                   >
                     Clear
                   </button>
-                  <button className="done" onClick={() => setEditRoom(false)}>
+                  {roomOpen && roomPts.length >= 3 && (
+                    <button className="close-shape" onClick={fr.closeRoom}>
+                      Close shape
+                    </button>
+                  )}
+                  <button className="done" onClick={exitRoomEdit}>
                     Done
                   </button>
                 </div>
@@ -347,6 +384,13 @@ export default function App() {
           onSyncPrefsChange={fr.setSync}
           onClose={() => setShowSettings(false)}
         />
+      )}
+
+      {needRefresh && (
+        <div className="update-toast" role="status">
+          <span>🔄 A new version is ready.</span>
+          <button onClick={applyUpdate}>Update</button>
+        </div>
       )}
 
       {toast && <div className="toast">{toast}</div>}

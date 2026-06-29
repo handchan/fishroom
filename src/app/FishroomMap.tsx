@@ -17,7 +17,11 @@ interface Props {
   onOpenStack: (stack: Stack) => void;
   onMoveStack: (id: string, x: number, y: number) => void;
   onRoomChange: (points: Pt[]) => void;
+  onCloseRoom: () => void;
 }
+
+/** How close (px) a tap must be to the first dot to close the outline. */
+const CLOSE_HIT = 20;
 
 const DRAG_THRESHOLD = 6;
 
@@ -30,6 +34,7 @@ export default function FishroomMap({
   onOpenStack,
   onMoveStack,
   onRoomChange,
+  onCloseRoom,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -66,7 +71,7 @@ export default function FishroomMap({
   // ---- Stack drag / tap ----
   function stackDown(e: React.PointerEvent, stack: Stack) {
     if (editRoom) return;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capturePointer(e);
     drag.current = {
       kind: "stack",
       id: stack.id,
@@ -106,7 +111,7 @@ export default function FishroomMap({
   // ---- Room editing ----
   function vertexDown(e: React.PointerEvent, index: number) {
     e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
+    capturePointer(e);
     drag.current = {
       kind: "vertex",
       id: "room",
@@ -117,20 +122,31 @@ export default function FishroomMap({
       startY: e.clientY,
     };
   }
-  function vertexUp(e: React.PointerEvent) {
+  function vertexUp(e: React.PointerEvent, index: number) {
     const d = drag.current;
     drag.current = null;
     if (!d || e.pointerId !== d.pointerId) return;
+    // While drawing, a tap (no drag) on the first dot closes the outline.
+    if (!d.moved && drawing && index === 0 && points.length >= 3) onCloseRoom();
   }
 
   function bgClick(e: React.PointerEvent) {
     if (!editRoom) return;
-    // ignore if a drag just happened
     const { x, y } = clientToNorm(e.clientX, e.clientY);
-    onRoomChange([...(room?.points ?? []), { x, y }]);
+    // Tapping near the first dot finishes the shape instead of adding a corner.
+    if (drawing && points.length >= 3) {
+      const p0 = points[0];
+      if (Math.hypot((p0.x - x) * size.w, (p0.y - y) * size.h) < CLOSE_HIT) {
+        onCloseRoom();
+        return;
+      }
+    }
+    onRoomChange([...points, { x, y }]);
   }
 
   const points = room?.points ?? [];
+  // `closed === false` means the user is still dropping corners.
+  const drawing = editRoom && room?.closed === false;
   const polyPoints = points.map((p) => `${p.x * size.w},${p.y * size.h}`).join(" ");
 
   return (
@@ -144,26 +160,36 @@ export default function FishroomMap({
           onPointerDown={editRoom ? bgClick : undefined}
           style={{ pointerEvents: editRoom ? "auto" : "none" }}
         >
-          {points.length >= 2 && (
-            <polygon
-              className="room-poly"
-              points={polyPoints}
-              style={{ pointerEvents: "none" }}
-            />
-          )}
-          {editRoom &&
-            points.map((p, i) => (
-              <circle
-                key={i}
-                cx={p.x * size.w}
-                cy={p.y * size.h}
-                r={11}
-                className="room-handle"
-                onPointerDown={(e) => vertexDown(e, i)}
-                onPointerMove={pointerMove}
-                onPointerUp={vertexUp}
+          {points.length >= 2 &&
+            (drawing ? (
+              <polyline
+                className="room-line"
+                points={polyPoints}
+                style={{ pointerEvents: "none" }}
+              />
+            ) : (
+              <polygon
+                className="room-poly"
+                points={polyPoints}
+                style={{ pointerEvents: "none" }}
               />
             ))}
+          {editRoom &&
+            points.map((p, i) => {
+              const isCloseTarget = drawing && i === 0 && points.length >= 3;
+              return (
+                <circle
+                  key={i}
+                  cx={p.x * size.w}
+                  cy={p.y * size.h}
+                  r={isCloseTarget ? 13 : 11}
+                  className={"room-handle" + (isCloseTarget ? " start" : "")}
+                  onPointerDown={(e) => vertexDown(e, i)}
+                  onPointerMove={pointerMove}
+                  onPointerUp={(e) => vertexUp(e, i)}
+                />
+              );
+            })}
         </svg>
       )}
 
@@ -212,6 +238,15 @@ export default function FishroomMap({
       )}
     </div>
   );
+}
+
+/** Capture the pointer, ignoring failures (e.g. already-released pointers). */
+function capturePointer(e: React.PointerEvent) {
+  try {
+    (e.target as Element).setPointerCapture(e.pointerId);
+  } catch {
+    /* capture is a best-effort optimization; dragging still works without it */
+  }
 }
 
 function clamp(v: number, lo = 0.04, hi = 0.96): number {

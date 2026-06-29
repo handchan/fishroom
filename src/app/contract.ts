@@ -64,7 +64,8 @@ export function toPublicData(state: AppState, now = Date.now()): PublicAquariumD
   return {
     schemaVersion: PUBLIC_SCHEMA_VERSION,
     generatedAt: new Date(now).toISOString(),
-    room: state.room,
+    // Only publish a room once it's a closed polygon (3+ points).
+    room: state.room && state.room.points.length >= 3 ? state.room : undefined,
     racks: state.stacks
       .filter((s) => usedStacks.has(s.id))
       .map((s) => ({ id: s.id, label: s.label, x: s.x, y: s.y })),
