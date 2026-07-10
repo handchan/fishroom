@@ -118,7 +118,11 @@ Shape of `data` (also defined in `src/app/contract.ts` as `PublicAquariumData`).
       "name": "Reef 40B",
       "volumeGallons": 40,
       "waterType": "saltwater",
-      "livestock": "Clownfish pair, …",
+      "livestock": "2× Ocellaris clownfish, …",     // derived summary string
+      "stock": [                                    // structured (additive)
+        { "name": "Ocellaris clownfish", "kind": "livestock", "count": 2 },
+        { "name": "Zoanthid frag", "kind": "livestock", "count": 3 }
+      ],
       "rackId": "s3",
       "rackLabel": "Reef stand",
       "status": "overdue",                  // fresh | ok | due | overdue | never

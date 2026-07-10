@@ -15,7 +15,7 @@ function tank(partial: Partial<Tank> = {}): Tank {
     defaultChangePercent: 30,
     stackId: "s1",
     shelf: 0,
-    livestock: "",
+    stock: [],
     notes: "",
     createdAt: new Date(NOW - 50 * DAY_MS).toISOString(),
     logs: [],
@@ -34,13 +34,14 @@ function log(daysAgo: number, type: LogEntry["type"], extra: Partial<LogEntry> =
 
 function state(tanks: Tank[]): AppState {
   return {
-    version: 2,
+    version: 3,
     room: { points: [{ x: 0.1, y: 0.1 }] },
     stacks: [
       { id: "s1", x: 0.2, y: 0.3, label: "Shared rack" },
       { id: "s2", x: 0.6, y: 0.6, label: "Private rack" },
     ],
     tanks,
+    species: [],
     reminders: { enabled: false, hour: 9 },
   };
 }
@@ -90,6 +91,31 @@ describe("toPublicData", () => {
     const out = toPublicData(state([tank({ shared: false })]), NOW);
     expect(out.tanks).toHaveLength(0);
     expect(out.racks).toHaveLength(0);
+  });
+
+  it("publishes structured stock plus a human-readable livestock summary", () => {
+    const s = state([
+      tank({
+        id: "pub",
+        shared: true,
+        stock: [
+          { id: "e1", species: "Cardinal tetra", kind: "livestock", count: 12 },
+          { id: "e2", species: "Java fern", kind: "plant", count: 1 },
+        ],
+      }),
+    ]);
+    const t = toPublicData(s, NOW).tanks[0];
+    expect(t.stock).toEqual([
+      { name: "Cardinal tetra", kind: "livestock", count: 12 },
+      { name: "Java fern", kind: "plant", count: 1 },
+    ]);
+    expect(t.livestock).toBe("12× Cardinal tetra, Java fern");
+  });
+
+  it("omits the livestock summary for an unstocked tank", () => {
+    const t = toPublicData(state([tank({ shared: true })]), NOW).tanks[0];
+    expect(t.livestock).toBeUndefined();
+    expect(t.stock).toEqual([]);
   });
 
   it("only publishes the room once it's a closed polygon (3+ points)", () => {

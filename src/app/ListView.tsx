@@ -12,6 +12,7 @@ interface Props {
   onOpen: (tank: Tank) => void;
   onLogChange: (tank: Tank) => void;
   onLogFeed: (tank: Tank) => void;
+  onAdd: () => void;
 }
 
 const TYPE_ICON: Record<Tank["waterType"], string> = {
@@ -27,13 +28,23 @@ export default function ListView({
   onOpen,
   onLogChange,
   onLogFeed,
+  onAdd,
 }: Props) {
   if (tanks.length === 0) {
     return (
       <div className="list">
         <div className="empty">
-          <div className="big">🪣</div>
-          <p>No tanks yet. Tap + to add your first aquarium.</p>
+          <div className="big" aria-hidden>
+            🪣
+          </div>
+          <h2>No tanks yet</h2>
+          <p>
+            Add your first aquarium and start tracking water changes and
+            feedings.
+          </p>
+          <button className="cta" onClick={onAdd}>
+            + Add a tank
+          </button>
         </div>
       </div>
     );
@@ -63,7 +74,7 @@ export default function ListView({
               <div className="meta">
                 <span
                   className="pill mini"
-                  style={{ background: STATUS_COLORS[st.level] }}
+                  style={{ "--pill-c": STATUS_COLORS[st.level] } as React.CSSProperties}
                 >
                   {STATUS_LABELS[st.level]}
                 </span>

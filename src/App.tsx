@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import FishroomMap from "./app/FishroomMap";
 import ListView from "./app/ListView";
+import StockView from "./app/StockView";
 import TankSheet from "./app/TankSheet";
 import RackSheet from "./app/RackSheet";
 import SettingsSheet from "./app/SettingsSheet";
@@ -12,7 +13,7 @@ import { useDialog } from "./app/Dialog";
 import { useAppUpdate } from "./app/pwa";
 import type { Stack, Tank } from "./app/types";
 
-type View = "map" | "list";
+type View = "map" | "list" | "stock";
 interface Editing {
   tank: Tank;
   isNew: boolean;
@@ -181,46 +182,74 @@ export default function App() {
         >
           📋 List
         </button>
+        <button
+          className={view === "stock" ? "active" : ""}
+          onClick={() => {
+            setView("stock");
+            exitRoomEdit();
+          }}
+        >
+          🐠 Stock
+        </button>
       </div>
 
       <div className="summary">
-        <div className="chip">
-          <div className="n">{summary.total}</div>
-          <div className="l">Tanks</div>
-        </div>
-        <div className="chip">
-          <div className="n" style={{ color: STATUS_COLORS.due }}>
-            {summary.due}
+        <div className="stats">
+          <div className="chip">
+            <div className="n">{summary.total}</div>
+            <div className="l">Tanks</div>
           </div>
-          <div className="l">Due soon</div>
-        </div>
-        <div className="chip">
-          <div className="n" style={{ color: STATUS_COLORS.overdue }}>
-            {summary.overdue}
+          <div className="chip">
+            <div
+              className="n"
+              style={summary.due > 0 ? { color: STATUS_COLORS.due } : undefined}
+            >
+              {summary.due}
+            </div>
+            <div className="l">Due soon</div>
           </div>
-          <div className="l">Overdue</div>
+          <div className="chip">
+            <div
+              className="n"
+              style={
+                summary.overdue > 0
+                  ? { color: STATUS_COLORS.overdue }
+                  : undefined
+              }
+            >
+              {summary.overdue}
+            </div>
+            <div className="l">Overdue</div>
+          </div>
         </div>
-      </div>
-
-      {tanks.length > 0 && (
-        <div className="toolbar">
+        {tanks.length > 0 && (
           <button
             className="feed-all"
             onClick={feedAllTanks}
             disabled={editRoom}
           >
-            🍤 Feed all tanks
+            <span aria-hidden>🍤</span>
+            <span>Feed all</span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="content">
         {view === "map" ? (
           <>
             {tanks.length === 0 ? (
               <div className="empty">
-                <div className="big">🪣</div>
-                <p>No tanks yet. Tap + to add your first aquarium.</p>
+                <div className="big" aria-hidden>
+                  🪣
+                </div>
+                <h2>No tanks yet</h2>
+                <p>
+                  Add your first aquarium and start tracking water changes and
+                  feedings.
+                </p>
+                <button className="cta" onClick={addNewRack}>
+                  + Add a tank
+                </button>
               </div>
             ) : (
               <FishroomMap
@@ -236,8 +265,8 @@ export default function App() {
               />
             )}
 
-            {/* Map tools */}
-            {!editRoom ? (
+            {/* Map tools — need the map canvas, so hidden while there are no tanks */}
+            {tanks.length === 0 ? null : !editRoom ? (
               <button
                 className="map-tool"
                 onClick={() => setEditRoom(true)}
@@ -285,13 +314,21 @@ export default function App() {
               </button>
             )}
           </>
-        ) : (
+        ) : view === "list" ? (
           <ListView
             tanks={tanks}
             now={now}
             onOpen={(t) => setEditing({ tank: t, isNew: false })}
             onLogChange={quickChange}
             onLogFeed={quickFeed}
+            onAdd={addNewRack}
+          />
+        ) : (
+          <StockView
+            tanks={tanks}
+            species={fr.state.species}
+            onOpenTank={(t) => setEditing({ tank: t, isNew: false })}
+            onRemoveSpecies={fr.removeSpecies}
           />
         )}
 
@@ -304,21 +341,23 @@ export default function App() {
 
       {view === "map" && tanks.length > 0 && !editRoom && (
         <div
-          className="legend"
-          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 8px)" }}
+          className="legend-wrap"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
         >
-          <span>
-            <i style={{ background: STATUS_COLORS.fresh }} /> Fresh
-          </span>
-          <span>
-            <i style={{ background: STATUS_COLORS.due }} /> Due
-          </span>
-          <span>
-            <i style={{ background: STATUS_COLORS.overdue }} /> Overdue
-          </span>
-          <span>
-            <i style={{ background: STATUS_COLORS.never }} /> Needs change
-          </span>
+          <div className="legend">
+            <span>
+              <i style={{ background: STATUS_COLORS.fresh }} /> Fresh
+            </span>
+            <span>
+              <i style={{ background: STATUS_COLORS.due }} /> Due
+            </span>
+            <span>
+              <i style={{ background: STATUS_COLORS.overdue }} /> Overdue
+            </span>
+            <span>
+              <i style={{ background: STATUS_COLORS.never }} /> Needs change
+            </span>
+          </div>
         </div>
       )}
 
@@ -344,6 +383,7 @@ export default function App() {
           tank={liveEditing.tank}
           isNew={liveEditing.isNew}
           now={now}
+          species={fr.state.species}
           onSave={(t) => {
             fr.upsertTank(t, liveEditing.ensureStack);
             setEditing(null);

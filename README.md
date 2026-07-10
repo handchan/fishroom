@@ -14,9 +14,13 @@ across all the aquariums in your fishroom.
     editing; **drag** racks to arrange them in the room.
 - **📋 List view** — every tank sorted by urgency for quick, one-tap logging:
   **Water ✓** and **Fed ✓** buttons, status pills, and last-event times.
+- **🐠 Stock view** — a running database of every species you keep. Livestock
+  and plants are structured entries (name × count) added per tank with
+  quick-add suggestions from everything you've kept before; the Stock tab
+  shows totals and which tanks hold each species.
 - **📝 Per-tank detail** — log water changes / feedings, set the target change
-  interval and typical %, record livestock, temperature, water type, and notes,
-  and review a full event history.
+  interval and typical %, manage the tank's livestock & plants, record
+  temperature, water type, and notes, and review a full event history.
 - **🔔 Reminders** — opt-in notifications when tanks are due/overdue, plus a
   once-a-day summary at a time you pick. (See *Notifications on iPhone* below.)
 - **📴 Offline-first** — all data lives on your device (localStorage). No
@@ -116,6 +120,8 @@ src/
     FishroomMap.tsx     # room outline drawing + draggable racks
     RackSheet.tsx       # expanded rack — stacked tanks, per-shelf logging
     ListView.tsx        # urgency-sorted quick-log list
+    StockView.tsx       # all livestock/plants, totals + which tank holds them
+    StockEditor.tsx     # per-tank species editor with catalog suggestions
     TankSheet.tsx       # add/edit tank bottom sheet
     SettingsSheet.tsx   # reminders, cloud sync, backup
     styles.css          # warm "Claude" theme (light + dark)

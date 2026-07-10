@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import type { LogEntry, Tank, WaterType } from "./types";
+import type { LogEntry, SpeciesRecord, Tank, WaterType } from "./types";
 import { daysSince, lastLogOfType } from "./status";
 import { useDialog } from "./Dialog";
 import TankCharts from "./Charts";
+import StockEditor from "./StockEditor";
 
 interface Props {
   tank: Tank;
   isNew: boolean;
   now: number;
+  /** Running species catalog for quick-add suggestions. */
+  species: SpeciesRecord[];
   onSave: (tank: Tank) => void;
   onDelete: (id: string) => void;
   onAddLog: (id: string, entry: Omit<LogEntry, "id">) => void;
@@ -26,6 +29,7 @@ export default function TankSheet({
   tank,
   isNew,
   now,
+  species,
   onSave,
   onDelete,
   onAddLog,
@@ -242,14 +246,21 @@ export default function TankSheet({
             </div>
           </div>
 
-          <div className="field">
-            <label>Livestock</label>
-            <input
-              value={draft.livestock}
-              onChange={(e) => set("livestock", e.target.value)}
-              placeholder="e.g. Cardinal tetras, otos"
-            />
-          </div>
+          <StockEditor
+            title="🐟 Livestock"
+            kind="livestock"
+            stock={draft.stock}
+            species={species}
+            onChange={(stock) => set("stock", stock)}
+          />
+
+          <StockEditor
+            title="🌿 Plants"
+            kind="plant"
+            stock={draft.stock}
+            species={species}
+            onChange={(stock) => set("stock", stock)}
+          />
 
           <div className="field">
             <label>Notes</label>

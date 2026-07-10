@@ -2,7 +2,7 @@
 // Only tanks explicitly marked `shared` are included. Bump the version if the
 // shape changes in a breaking way so the consuming site can adapt.
 
-import type { AppState, Tank, WaterType } from "./types";
+import type { AppState, StockEntry, StockKind, Tank, WaterType } from "./types";
 import { daysSince, getStatus, lastLogOfType } from "./status";
 import type { StatusLevel } from "./status";
 
@@ -17,12 +17,21 @@ export interface PublicChange {
   percent: number;
 }
 
+export interface PublicStock {
+  name: string;
+  kind: StockKind;
+  count: number;
+}
+
 export interface PublicTank {
   id: string;
   name: string;
   volumeGallons: number;
   waterType: WaterType;
+  /** Human-readable summary, e.g. "12× Cardinal tetra, Java fern". */
   livestock?: string;
+  /** Structured stock list (added in-place; additive, not a version bump). */
+  stock: PublicStock[];
   /** Where it sits in the fishroom map (normalized 0..1) + which rack. */
   rackId: string;
   rackLabel?: string;
@@ -56,6 +65,14 @@ export interface PublicAquariumData {
 }
 
 const CAP = 120; // max history points per series
+
+/** One-line human summary of a tank's stock, e.g. "12× Cardinal tetra". */
+export function stockLabel(stock: StockEntry[]): string | undefined {
+  if (stock.length === 0) return undefined;
+  return stock
+    .map((e) => (e.count > 1 ? `${e.count}× ${e.species}` : e.species))
+    .join(", ");
+}
 
 export function toPublicData(state: AppState, now = Date.now()): PublicAquariumData {
   const shared = state.tanks.filter((t) => t.shared);
@@ -101,7 +118,12 @@ function publicTank(t: Tank, state: AppState, now: number): PublicTank {
     name: t.name,
     volumeGallons: t.volumeGallons,
     waterType: t.waterType,
-    livestock: t.livestock || undefined,
+    livestock: stockLabel(t.stock),
+    stock: t.stock.map((e) => ({
+      name: e.species,
+      kind: e.kind,
+      count: e.count,
+    })),
     rackId: t.stackId,
     rackLabel: rack?.label,
     status: st.level,

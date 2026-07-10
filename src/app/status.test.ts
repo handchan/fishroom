@@ -22,7 +22,7 @@ function tank(partial: Partial<Tank> = {}): Tank {
     defaultChangePercent: 30,
     stackId: "s1",
     shelf: 0,
-    livestock: "",
+    stock: [],
     notes: "",
     createdAt: new Date(NOW - 100 * DAY_MS).toISOString(),
     logs: [],

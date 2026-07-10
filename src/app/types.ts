@@ -2,6 +2,30 @@
 
 export type WaterType = "freshwater" | "planted" | "saltwater" | "brackish";
 
+/** What a stocked species is: an animal or a plant. */
+export type StockKind = "livestock" | "plant";
+
+/** A species + quantity line item living in a tank. */
+export interface StockEntry {
+  id: string;
+  /** Display name of the species, e.g. "Cardinal tetra". */
+  species: string;
+  kind: StockKind;
+  /** How many are in this tank. */
+  count: number;
+}
+
+/**
+ * A species the fishroom has ever kept — the running catalog. Persists even
+ * after the last individual leaves a tank, powering suggestions and the
+ * Stock page's "previously kept" section.
+ */
+export interface SpeciesRecord {
+  id: string;
+  name: string;
+  kind: StockKind;
+}
+
 export interface LogEntry {
   id: string;
   /** ISO timestamp of when the event happened. */
@@ -32,7 +56,8 @@ export interface Tank {
   shelf: number;
 
   /** Metadata */
-  livestock: string;
+  /** Species living in this tank (animals and plants). */
+  stock: StockEntry[];
   notes: string;
   tempF?: number;
 
@@ -91,6 +116,8 @@ export interface AppState {
   room?: RoomShape;
   stacks: Stack[];
   tanks: Tank[];
+  /** Running catalog of every species kept — see SpeciesRecord. */
+  species: SpeciesRecord[];
   reminders: ReminderSettings;
   sync?: SyncSettings;
 }

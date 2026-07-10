@@ -267,7 +267,8 @@ function labelOffset(sum: { maxVolume: number }, count: number): number {
 }
 
 function rackWidth(maxVolume: number): number {
-  return Math.max(48, Math.min(96, nodeRadius(maxVolume) * 1.7));
+  // Wide enough that the volume + days labels on a shelf never collide.
+  return Math.max(64, Math.min(96, nodeRadius(maxVolume) * 1.7));
 }
 function rackHeight(count: number): number {
   const band = 16;

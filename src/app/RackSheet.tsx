@@ -95,7 +95,7 @@ export default function RackSheet({
                       </span>
                       <span
                         className="pill mini"
-                        style={{ background: STATUS_COLORS[st.level] }}
+                        style={{ "--pill-c": STATUS_COLORS[st.level] } as React.CSSProperties}
                       >
                         {STATUS_LABELS[st.level]}
                       </span>
