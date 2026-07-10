@@ -28,7 +28,13 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # Cloud-sync keys are optional: absent secrets leave the app fully
+      # on-device (see docs/INTEGRATION.md to enable publishing).
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_AQUARIUM_SLUG: ${{ vars.VITE_AQUARIUM_SLUG || 'hengchengyu' }}
       # Package for Pages only when building the default branch.
       - name: Configure Pages
         if: github.ref == 'refs/heads/main'
