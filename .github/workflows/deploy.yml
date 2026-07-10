@@ -28,12 +28,13 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      # Cloud-sync keys are optional: absent secrets leave the app fully
-      # on-device (see docs/INTEGRATION.md to enable publishing).
+      # Cloud-sync config. These are PUBLIC values (the publishable key ships
+      # in the client bundle by design; access is enforced by RLS — see
+      # docs/INTEGRATION.md). Repo secrets, if set, override the defaults.
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://gdnwwrzzcetzpofslyoa.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_k0txbg5wXw55-DyBUTE1Xg_FnwOyjNH' }}
           VITE_AQUARIUM_SLUG: ${{ vars.VITE_AQUARIUM_SLUG || 'hengchengyu' }}
       # Package for Pages only when building the default branch.
       - name: Configure Pages
